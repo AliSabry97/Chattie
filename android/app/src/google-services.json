@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "436125091990",
+    "project_id": "alisabry-1538666297652",
+    "storage_bucket": "alisabry-1538666297652.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:436125091990:android:0aaa3022b187a7c4965ab7",
+        "android_client_info": {
+          "package_name": "com.example.ecommerce_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "436125091990-qv8m6s5ia2pth31k71an3p6crgebem3j.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB9deyWWcGEQY9Xv327IegCWTwVGew_Mz0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "436125091990-qv8m6s5ia2pth31k71an3p6crgebem3j.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
