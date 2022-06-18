@@ -1,4 +1,4 @@
-
+    
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -19,7 +19,7 @@ Future uploadToFirebaseStorage(File file)async{
 
 await FirebaseStorage.instance.ref().child("Stories/$file").putFile(file);
 
-String currentTime=DateTime.now().millisecondsSinceEpoch.toString();
+String currentTime=DateTime.now().toString();
 Map <String ,String> setData=Map <String ,String>();
 
 getDownloadurl=await FirebaseStorage.instance.ref().child("Stories/$file").getDownloadURL();
@@ -46,6 +46,8 @@ _storyCollection.doc(userid).collection("Stories").add(sendData);
 
 
 }
+
+
  uploadStory(Map<String,String>mystory)async{
 await _storyCollection.doc(userid).collection("MyStories").add(mystory);
 
@@ -84,6 +86,7 @@ Future getAllStoriesForFriends( user)async{
   return  FirebaseFirestore.instance.collection("Story")
    .doc(user)
    .collection("Stories")
+   .orderBy("uploadTime",descending: false)
    .snapshots();
 
 
@@ -102,7 +105,42 @@ Future getMyStory(currentuserid) async {
   return FirebaseFirestore.instance.collection("Story")
   .doc(currentuserid)
   .collection("Stories")
+  .orderBy("uploadTime",descending:false)
   .snapshots();
   
+}
+
+Future removeStories(currentuserid)async{
+
+var uploadtime;
+
+return FirebaseFirestore.instance.collection("Story")
+.doc(currentuserid)
+.collection("Stories")
+.get()
+.then((value) {
+ 
+  value.docs.forEach((element) async {
+    uploadtime=int.parse(element.get("uploadTime"));
+    Timestamp timestamp=Timestamp.fromMillisecondsSinceEpoch(uploadtime);
+    DateTime dateTime=timestamp.toDate();
+
+    if(dateTime.difference(DateTime.now()).inDays.abs()>=1){
+   var doc=  await FirebaseFirestore.instance.collection("Story")
+      .doc(currentuserid)
+      .collection("Stories")
+      .where("uploadTime",isEqualTo: uploadtime.toString())
+      .get();
+      
+      FirebaseFirestore.instance.collection("Story").doc(currentuserid)
+      .collection("Stories")
+      .doc(doc.docs.first.id)
+      .delete();
+    
+    }
+  });
+  
+});
+
 }
 }

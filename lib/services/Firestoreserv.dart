@@ -1,6 +1,7 @@
-import 'dart:collection';
+
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:ecommerce_app/Model/People.dart';
 import 'package:ecommerce_app/Model/UserModel.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import'dart:async';
@@ -13,7 +14,7 @@ class Firestoreservice{
   CollectionReference friends=FirebaseFirestore.instance.collection("Friends");
 
   //
-    Reference firebaseStorage=FirebaseStorage.instance.ref();
+    
 
   final List users_list=[];
    final List finalUsersList=[];
@@ -25,7 +26,7 @@ class Firestoreservice{
   late String name;
     
 
-  HashMap<String,String> request=HashMap<String,String>();
+  Map<String,String> request=Map<String,String>();
 
 User? user=FirebaseAuth.instance.currentUser;
 
@@ -45,6 +46,65 @@ Future get_users()async
 
         
 }
+
+Stream <List<People>> get_all_people(){
+
+  return users.where("user_id",isNotEqualTo: user!.uid)
+  .snapshots().map((event){
+
+    List<People> people=List.empty(growable: true);
+    event.docs.forEach((element) {
+      people.add(People.fromDocumentsnapshot(element));
+    });
+  print(people.length);
+  return people;
+  });
+}
+
+Stream <String> getrequestuser(String user1,String user2){
+  bool find1=false , find2=false;
+  Map<dynamic,dynamic>userrequest=Map<dynamic,dynamic>();
+
+return requests.doc(user1).snapshots().map((event) {
+  if(event.data()!=null){
+  userrequest.addAll(event.data()as Map);
+  userrequest.values.forEach((element) {
+    if(element==user2)
+    find1=true;
+  });
+  
+
+  }
+
+  return user2;
+  
+});
+
+}
+Stream <List<String>> getrequestuser1(String user1,String user2){
+  bool find1=false , find2=false;
+  Map<dynamic,dynamic>userrequest=Map<dynamic,dynamic>();
+  List<String>users=List.empty(growable: true);
+return requests.doc(user1).snapshots().map((event) {
+  if(event.data()!=null){
+  userrequest.addAll(event.data()as Map);
+  userrequest.values.forEach((element) {
+    if(element==user2)
+    users.add(element);
+  });
+  
+  
+
+  }
+  var returnedList=users.toSet().toList();
+
+  return returnedList;
+  
+});
+
+}
+
+
   
 Future sendFriendRequest(String askedid) async{
   final String? user_id=user!.uid;
@@ -53,6 +113,7 @@ Future sendFriendRequest(String askedid) async{
   if(user_id!=null)
   {
     int count=0;
+  
     Map<dynamic,dynamic> key=Map<String,dynamic> ();
     await requests.doc(askedid).get().then((DocumentSnapshot documentSnapshot) async {
 
@@ -63,9 +124,14 @@ Future sendFriendRequest(String askedid) async{
       
         count=key.length;
       
+      
       try{
 
-        request[count.toString()]=user_id;
+        request={
+          (count++).toString():user_id,
+     
+        };
+        
         await requests.doc(askedid).update(request);
 
       }catch(e)
@@ -78,7 +144,9 @@ Future sendFriendRequest(String askedid) async{
       
       else
       {
-        request['0']=user_id;
+           request={
+         "0":user_id,
+        };
       
       
       try{
@@ -97,6 +165,7 @@ Future sendFriendRequest(String askedid) async{
   }
   
   }
+
 
 
 Future checkFriendRequest(onetosearch ,onetocheck) async {
@@ -133,8 +202,11 @@ Future checkFriendRequest(onetosearch ,onetocheck) async {
     if(value==onetocheck)
     isFound=true;
   });
- return isFound;
+ return isFound ;
 }
+
+
+   
 
 
 Future removeFriendRequest(firstuser,seconduser)async
@@ -150,14 +222,19 @@ Future removeFriendRequest(firstuser,seconduser)async
       fetch_request.addAll(documentSnapshot.data() as Map);
 
     }
-
   
+   
+  Map<String,Object> deleteUsers= Map<String,Object>();
     fetch_request.forEach((key, value) {
       
       if(value==seconduser)
       {
+          deleteUsers={
+            "$key":FieldValue.delete(),
+            "status":FieldValue.delete(),
+          };
            requests.
-           doc(firstuser).update({'$key':FieldValue.delete()}).then((value) => print("Successfully deleted From Request List"))
+           doc(firstuser).update(deleteUsers).then((value) => print("Successfully deleted From Request List"))
           .catchError((error)=>print("Failed to delete From Request List"));
 
               
@@ -234,18 +311,7 @@ Future fetchRequests()async
 
 
 
-Future uploadToDatabase(file)async
-{
-  String?userID=user!.uid;
 
-
-   await firebaseStorage.child("images/$userID/profilepic").putFile(file);
-   String downloadurl=await firebaseStorage.child("images/$userID/profilepic").getDownloadURL();
-
-  await  users.doc(userID).update({"Photourl":downloadurl});
-
-  return downloadurl;
-}
 
 
   Future readPhotourl() async

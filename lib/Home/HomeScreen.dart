@@ -19,12 +19,13 @@ class HomeScreen extends StatefulWidget {
   _HomeScreenState createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with  WidgetsBindingObserver {
 late  SharedPreferences sharedPreferences;
   
    String imageUrl="";
    File? file;
    String userID=FirebaseAuth.instance.currentUser!.uid;
+    String status="offline";
   CollectionReference users=FirebaseFirestore.instance.collection("users");
   
 
@@ -35,9 +36,40 @@ late  SharedPreferences sharedPreferences;
 
 @override
   void initState() {
-
+    
+    status="online";
+    WidgetsBinding.instance!.addObserver(this);
     loadphoto();
     super.initState();
+
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    
+    super.didChangeAppLifecycleState(state);
+    if(state==AppLifecycleState.resumed){
+
+      status="online";
+      setStatus(status);
+      
+    }
+    else
+    {
+      status="offline";
+  setStatus(status);
+    }
+    
+  }
+
+  void setStatus(String status)async{
+
+   await users.doc(userID).update(
+      {
+"status":status,
+      }
+      
+    );
 
   }
   @override
@@ -169,7 +201,7 @@ Future loadphoto()async
    String img;
   img=await Firestoreservice().readPhotourl();
 
-  if(img.isNotEmpty)
+  if(img.isNotEmpty&& mounted)
   {
     setState(() {
       imageUrl=img;

@@ -141,36 +141,66 @@ class _ChatsPageState extends State<ChatsPage> {
                                 
                                       imgphoto=snapimage.data!.docs.first.get("Photourl");
                                                        
-                                    return ListTile(
-                                          leading: CircleAvatar(
-                                            backgroundImage: snapimage
-                                                        .data!.docs.first
-                                                        .get("Photourl")
-                                                        .toString() ==
-                                                    ""
-                                                ? AssetImage(
-                                                    "assets/images/avatar.jpg")
-                                                : NetworkImage(imgphoto)
-                                                    as ImageProvider,
-                                            radius: 30,
-                                          ),
-                                          title: Row(
-                                           
-                                            children: [
-                                              Text(
-                                                "${roomname.toString().replaceAll("-", "").replaceAll(currentusername, "")}",
-                                                style:
-                                                    GoogleFonts.sourceSansPro(
-                                                        fontSize: 23,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        color: Color.fromRGBO(
-                                                            251, 251, 251, 20)),
-                                              ),
-                                            ],
-                                          ),
-                                        );
-                                    
+                                    return StreamBuilder<QuerySnapshot>(
+                              stream:  FirebaseFirestore.instance.collection("ChatRoom").doc(roomname.toString()).collection("chats") .orderBy("sentat",descending: false).limitToLast(1) .snapshots(),
+                              builder: (context, snapshot) {
+                                if (snapshot.hasData && snapshot.data!.docs.length>=1) {
+                                  var sentat=snapshot.data!.docs.elementAt(0).get("sentat");
+                          
+                              
+                                  return InkWell(
+                                    onTap: () {
+                                      
+                                            Get.to(() => ChatScreen(
+                                                senderid: snapshot.data!.docs.elementAt(0).get("senderid"),
+                                                senderusername: snapshot.data!.docs.elementAt(0).get("sendername"),
+                                                receiverid: snapshot.data!.docs.elementAt(0).get("reciverid"),
+                                                receiverusername: roomname.toString().replaceAll("-", "").replaceAll( currentusername, ""),
+                                                img:imgphoto));
+                                          },
+                                    child: 
+                                         ListTile(
+                                            leading: CircleAvatar(
+                                              backgroundImage: snapimage
+                                                          .data!.docs.first
+                                                          .get("Photourl")
+                                                          .toString() ==
+                                                      ""
+                                                  ? AssetImage(
+                                                      "assets/images/avatar.jpg")
+                                                  : NetworkImage(imgphoto)
+                                                      as ImageProvider,
+                                              radius: 27,
+                                            ),
+                                            title: Text(
+                                                  "${roomname.toString().replaceAll("-", "").replaceAll(currentusername, "")}",
+                                                  style:
+                                                      GoogleFonts.ubuntu(
+                                                          fontSize: 20,
+                                                         
+                                                          color: Color.fromRGBO(
+                                                              251, 251, 251, 20)),
+                                                ),
+                                                subtitle: Text(
+                                                  "${snapshot.data!.docs.first.get("messagebody")}",
+                                                  style: GoogleFonts.ubuntu(fontSize:14),
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                                trailing: Text("${sentat.toString().substring(10,16)}"),
+                                      ),
+                                      
+                                  
+                                      
+
+                                     
+                                        
+                                  );
+                                } else {
+                                  return Container();
+                                }
+                              },
+                            );
+    
                                       
                                   }
                                   else
@@ -180,65 +210,7 @@ class _ChatsPageState extends State<ChatsPage> {
                                
                               ),
                             ),
-                            StreamBuilder<QuerySnapshot>(
-                              stream:  FirebaseFirestore.instance.collection("ChatRoom").doc(roomname.toString()).collection("chats") .orderBy("sentat",descending: false).limitToLast(1) .snapshots(),
-                              builder: (context, snapshot) {
-                                if (snapshot.hasData) {
-                                  var sentat=int.parse(snapshot.data!.docs.elementAt(0).get("sentat"));
-                          
-                                  Timestamp timestamp=Timestamp.fromMillisecondsSinceEpoch(sentat);
-                                  DateTime dateTime=timestamp.toDate();
-                                  return InkWell(
-                                    onTap: () {
-                                            Get.off(() => ChatScreen(
-                                                senderid: snapshot.data!.docs.elementAt(0).get("senderid"),
-                                                senderusername: snapshot.data!.docs.elementAt(0).get("sendername"),
-                                                receiverid: snapshot.data!.docs.elementAt(0).get("reciverid"),
-                                                receiverusername: roomname.toString().replaceAll("-", "").replaceAll( currentusername, ""),
-                                                img:imgphoto));
-                                          },
-                                    child: Container(
-                                          child: Row(
-                                             mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              Expanded(
-                                                child: Container(
-                                                  margin: EdgeInsets.only(left: 80),
-                                                  child: Text(
-                                                    
-                                                    "${snapshot.data!.docs.elementAt(0).get("messagebody")}",
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                        maxLines:1,
-                                                    style:
-                                                        GoogleFonts.sourceSansPro(
-                                                      fontSize: 16.0,
-                                                      color: Colors.grey.shade400,
-                                                    ),
-                                                    
-                                                                                           
-                                                  ),
-                                                ),
-                                              ),
-                                           
-                                              Text(
-                                                "${dateTime.toString().substring(10,16)}",
-                                                style:
-                                                    GoogleFonts.sourceSansPro(
-                                                  fontSize: 16.0,
-                                                  color: Colors.grey.shade400,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                  );
-                                } else {
-                                  return Container();
-                                }
-                              },
-                            ),
+                           
                           ],
                         ),
                       ),

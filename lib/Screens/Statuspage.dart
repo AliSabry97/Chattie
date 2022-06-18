@@ -1,12 +1,16 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:dotted_border/dotted_border.dart';
 import 'package:ecommerce_app/Screens/StoryPageView.dart';
 import 'package:ecommerce_app/services/StoryServices.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import 'package:story_designer/story_designer.dart';
 
 class StatusPage extends StatefulWidget {
@@ -68,7 +72,7 @@ class _StatusPage extends State<StatusPage> {
             height: 48,
             child: FloatingActionButton(
               heroTag: Text("edit btn"),
-              backgroundColor:Color.fromRGBO(16, 45, 49, 30),
+              backgroundColor: Color.fromRGBO(16, 45, 49, 30),
               onPressed: () {},
               child: Icon(Icons.edit),
             ),
@@ -80,7 +84,7 @@ class _StatusPage extends State<StatusPage> {
             height: 48,
             child: FloatingActionButton(
               heroTag: Text("camera_alt"),
-              backgroundColor:Color.fromRGBO(16, 45, 49, 30),
+              backgroundColor: Color.fromRGBO(16, 45, 49, 30),
               onPressed: () {
                 final picker = ImagePicker();
                 picker
@@ -90,11 +94,9 @@ class _StatusPage extends State<StatusPage> {
                     return null;
                   }
 
-                  File editedfile =
-                      await Navigator.of(context).push(new MaterialPageRoute(
-                          builder: (context) => StoryDesigner(
-                                filePath: file.path,
-                              )));
+                  File editedfile = await Get.to(StoryDesigner(
+                    filePath: file.path,
+                  ));
 
                   StoryServices().uploadToFirebaseStorage(editedfile);
                 });
@@ -107,13 +109,39 @@ class _StatusPage extends State<StatusPage> {
       body: Container(
         color: Color.fromRGBO(16, 45, 49, 30),
         child: Padding(
-          padding: const EdgeInsets.only(left: 2, top: 5),
+          padding: const EdgeInsets.only(top: 10),
           child: Column(children: [
             StreamBuilder<QuerySnapshot>(
               stream: mystory,
               builder: (context, snap) {
-                if (snap.hasData &&snap.data!.docs.length !=0 && snap.connectionState == ConnectionState.active) {
+                if (snap.hasData &&snap.data!.docs.length != 0 &&snap.connectionState == ConnectionState.active) {
                   var link = snap.data!.docs.last.get("storyLink");
+                  DateTime uploadTime =
+                      DateTime.parse(snap.data!.docs.last.get("uploadTime"));
+
+                  final day = DateTime(uploadTime.year, uploadTime.month, uploadTime.day);
+                
+                  final now = DateTime(DateTime.now().year,
+                      DateTime.now().month, DateTime.now().day);
+                  final yesterday = DateTime(DateTime.now().year,
+                      DateTime.now().month, DateTime.now().day - 1);
+                      
+                  String Day;
+                  if (day == now) {
+                    Day = "Today ,";
+                  } else if (day == yesterday && uploadTime.difference(DateTime.now()).inHours.abs() <
+                          24) {
+                    Day = "Yesterday,";
+                  } else {
+                    FirebaseFirestore.instance
+                        .collection("Story")
+                        .doc(curentLoggedInUser)
+                        .collection("Stories")
+                        .doc(snap.data!.docs.last.id)
+                        .delete();
+                    Day = "";
+                  }
+
                   return InkWell(
                     onTap: () {
                       Navigator.push(
@@ -123,39 +151,56 @@ class _StatusPage extends State<StatusPage> {
                                     userid: curentLoggedInUser,
                                   )));
                     },
-                    child: Row(
+                    child:Padding(
+                      padding: const EdgeInsets.only(left: 5),
+                      child: Row
+                         (
                       children: [
-                        CircleAvatar(
-                          radius: 30,
-                          backgroundColor:Colors.green,
-                            child: CircleAvatar(
-                          backgroundImage: NetworkImage(link),
-                          radius: 28,
-                        )),
-                        SizedBox(
-                          width: 10,
-                        ),
-                        Text(
+                       CircleAvatar(
+                         radius: 30,
+                         backgroundColor: Colors.teal.shade300,
+                         child: CircleAvatar(
+                                           backgroundImage: NetworkImage(link),
+                                           radius: 27,
+                                         ),
+                       ),
+                                      SizedBox(width: 7,),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                             Text(
                           "My status",
-                          style: TextStyle(color: Colors.white),
+                          style: GoogleFonts.ubuntu(color: Colors.white , fontSize: 16),
                         ),
-                      ],
-                    ),
-                  );
-                }
-                {
-                  return StreamBuilder<DocumentSnapshot>(
+                        SizedBox(height: 3,),
+                          Text(
+                          "${Day.toString() + DateFormat.jm().format(uploadTime)}",
+                          style: GoogleFonts.ubuntu(color: Colors.grey[900]),
+                        )
+                      ],),
+                                      ],),
+                    )
+                   
+                        
+                      
+                  
+                 
+                    );
+                    }  
+
+                 else
+                 {
+                   return StreamBuilder<DocumentSnapshot>(
                       stream: _currentphoto,
                       builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
+                        if (snapshot.connectionState ==  ConnectionState.waiting) {
                           return Center(
                             child: CircularProgressIndicator(
                               color: Colors.white,
                               strokeWidth: 10,
                             ),
                           );
-                        } else if (snapshot.connectionState ==ConnectionState.active && snapshot.hasData) {
+                        } else if (snapshot.connectionState ==ConnectionState.active &&snapshot.hasData) {
                           photoUrl = snapshot.data!.get("Photourl");
                           return Column(
                             children: [
@@ -167,18 +212,16 @@ class _StatusPage extends State<StatusPage> {
                                   picker
                                       .pickImage(
                                           source: ImageSource.gallery,
-                                          imageQuality: 40)
+                                          imageQuality: 80)
                                       .then((file) async {
                                     if (file == null) {
                                       return null;
                                     }
 
-                                    File editedfile = await Navigator.of(
-                                            context)
-                                        .push(new MaterialPageRoute(
-                                            builder: (context) => StoryDesigner(
-                                                  filePath: file.path,
-                                                )));
+                                    File editedfile =
+                                        await Get.to(() => StoryDesigner(
+                                              filePath: file.path,
+                                            ));
 
                                     StoryServices()
                                         .uploadToFirebaseStorage(editedfile);
@@ -201,30 +244,24 @@ class _StatusPage extends State<StatusPage> {
                                         bottom: 0,
                                         right: 0,
                                         child: CircleAvatar(
-                                          radius: 12,
+                                          radius: 15,
                                           child: Icon(
                                             Icons.add_circle,
-                                            size: 25,
+                                            size: 23,
                                             color: Colors.white,
                                           ),
                                         ),
                                       ),
                                     ]),
                                     title: Text(
-                                      "My Status ",
-                                      style: GoogleFonts.firaSans(
-                                        fontSize: 16,
-                                        color:
-                                            Color.fromRGBO(251, 251, 251, 20),
-                                        fontWeight: FontWeight.w500,
-                                      ),
+                                      "My status ",
+                                      style: GoogleFonts.ubuntu(
+                                          color: Colors.white),
                                     ),
                                     subtitle: Text(
                                       "Tap to add status update",
-                                      style: GoogleFonts.firaSans(
-                                        fontSize: 12,
-                                        color: Colors.grey,
-                                      ),
+                                      style: GoogleFonts.ubuntu(
+                                          color: Colors.grey, fontSize: 12),
                                     ),
                                   ),
                                 ),
@@ -237,6 +274,7 @@ class _StatusPage extends State<StatusPage> {
                         } else
                           return Container();
                       });
+                  
                 }
               },
             ),
@@ -249,7 +287,7 @@ class _StatusPage extends State<StatusPage> {
                   alignment: Alignment.topLeft,
                   child: Text(
                     "Recent Updates",
-                    style: GoogleFonts.firaSans(
+                    style: GoogleFonts.ubuntu(
                       fontSize: 15,
                       color: Colors.white,
                     ),
@@ -273,59 +311,80 @@ class _StatusPage extends State<StatusPage> {
                             .collection("Story")
                             .doc(getFriendUsers.elementAt(index))
                             .collection("Stories")
+                            .orderBy("uploadTime", descending: false)
                             .snapshots(),
                         builder: (context, snapshot) {
-                          if (snapshot.hasData &&
-                              snapshot.data!.docs.length != 0 &&
-                              snapshot.connectionState ==
-                                  ConnectionState.active) {
-                            return Column(
-                              children: [
-                                InkWell(
-                                  onTap: () {
-                                    Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                            builder: (context) => StoryPageView(
-                                                  userid: getFriendUsers
-                                                      .elementAt(index),
-                                                )));
-                                  },
-                                  child: Row(
-                                    children: [
+                          if (snapshot.hasData &&snapshot.data!.docs.length != 0 &&snapshot.connectionState ==ConnectionState.active) {
+                            DateTime uploadTime = DateTime.parse(
+                                snapshot.data!.docs.last.get("uploadTime"));
+
+                            final day = DateTime(uploadTime.year,uploadTime.month, uploadTime.day);
+
+                            final now = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+                            final yesterday = DateTime(DateTime.now().year,DateTime.now().month, DateTime.now().day - 1);
+                            String Day;
+                            if (day == now) {
+                              Day = "Today At,";
+                            } else if (day == yesterday &&uploadTime.difference(DateTime.now()).inHours.abs() <24) {
+                              Day = "Yesterday,";
+                            } else {
+                              FirebaseFirestore.instance  .collection("Story").doc(getFriendUsers.elementAt(index))
+                                  .collection("Stories")
+                                  .doc(snapshot.data!.docs.last.id)
+                                  .delete();
+                              Day = "";
+                            }
+
+                            return InkWell(
+                              onTap: () {
+                                Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) => StoryPageView(
+                                              userid: getFriendUsers
+                                                  .elementAt(index),
+                                            )));
+                              },
+                              child: Row(
+                                children: [
+
                                       CircleAvatar(
-                                        radius: 30,
-                                        backgroundColor: Colors.green,
-                                      child: CircleAvatar(
-                                        backgroundImage: NetworkImage(snapshot.data!.docs.first.get("storyLink"),
-                                      ),radius: 28,),
-                                      ),
-                                      SizedBox(
-                                        width: 10,
-                                      ),
-                                      Text(
-                                        "${snapshot.data!.docs.first.get("username")}",
-                                        style: GoogleFonts.firaSansCondensed(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w400,
-                                          fontSize: 20,
-                                        ),
-                                      ),
-                                      SizedBox(
-                                        height: 10,
-                                      ),
-                                    ],
+                                  radius: 30,
+                                  backgroundColor: Colors.teal.shade300,
+                                  child: CircleAvatar(
+                                    backgroundImage: NetworkImage(snapshot.data!.docs.last.get("storyLink")),
+                                    radius: 27,
                                   ),
                                 ),
                                 SizedBox(
-                                  height: 10,
+                                  width: 7,
                                 ),
-                              ],
-                            );
-                          } else if (snapshot.hasError ||
-                              snapshot.connectionState ==
-                                  ConnectionState.waiting) {
-                            return CircularProgressIndicator();
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+
+                                      Text(
+                                  "${snapshot.data!.docs.first.get("username")}",
+                                  style: GoogleFonts.ubuntu(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w400,
+                                    fontSize: 20,
+                                  ),
+                                  
+                                ),
+                                SizedBox(height: 3,),
+                             Text(
+                                  "${Day.toString() + DateFormat.jm().format(uploadTime)}",
+                                  style: GoogleFonts.ubuntu(
+                                      color: Colors.grey[900]),
+                                ),
+                                ],
+                                ),
+                              ],),
+                            
+                              
+                              );
+                          
                           } else
                             return Container();
                         }),
